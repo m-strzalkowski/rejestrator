@@ -30,7 +30,7 @@ void syslog_dummy(int s, const char * format, ...) {
 #define syslog syslogproxy
 
 int pid_nagrywaj=-1;
-
+bool nie_rysuj=false;
 void zakoncz()
 {
     syslog(LOG_NOTICE, "Smaczdaemon terminated.");
@@ -127,9 +127,11 @@ void wylacz_komputer(void)
 {
     if(pid_nagrywaj>0 && (getpgid(pid_nagrywaj) > 0))//jaka grupe ma proces o tym pid -> czy zyje
     {
-        syslog(LOG_NOTICE, "Not started 'nagrywaj' because it is appaently already running, with pid %d %d",pid_nagrywaj, getpgid(pid_nagrywaj));
+        syslog(LOG_NOTICE, "Not shutted down system bacause nagrywaj is running, with pid %d %d",pid_nagrywaj, getpgid(pid_nagrywaj));
     }
     else{
+        ekran_nagrywanie((char *)"SYSTEMU", (char *)"WYLACZANIE");
+        nie_rysuj = true;
         int status = system("shutdown now");
         syslog(LOG_NOTICE, "Issued a shutdown now:%d", status);
     }
@@ -226,7 +228,7 @@ int main(int argc, char *argv[]) {
         }
         else{
             if(poprzedni_pid_nagrywaj != pid_nagrywaj)syslog(LOG_NOTICE, "Not found 'nagrywaj'.");
-            ekran_godzina();
+            if(!nie_rysuj)ekran_godzina();
         }
         poprzedni_pid_nagrywaj = pid_nagrywaj;
     }

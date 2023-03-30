@@ -200,10 +200,10 @@ const char * symbolOstatniegoDuzego()
 {
   switch(ostatni_duzy())
   {
-    case PIN_DUZEGO_A: return "A";
-    case PIN_DUZEGO_B: return "B";
-    case PIN_DUZEGO_C: return "C";
-    case PIN_DUZEGO_D: return "D";
+    case PIN_DUZEGO_A: return "CHODZENIE";
+    case PIN_DUZEGO_B: return "BIEGANIE";
+    case PIN_DUZEGO_C: return "SIEDZENIE";
+    case PIN_DUZEGO_D: return "UPADANIE";
     default: return SYMBOL_NIEUSTALONEGO_DUZEGO;
   }
 }
