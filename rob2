@@ -1,9 +1,0 @@
-CC = gcc
-.PHONY: all
-all: rejestrator
-
-rejestrator: rejestrator.cpp
-	$(CC) -Wall -O2 rejestrator.cpp -o rejestrator -llsm9ds1
-
-clean:
-	rm -f rejestrator
