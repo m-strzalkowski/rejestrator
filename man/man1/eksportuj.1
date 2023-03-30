@@ -4,28 +4,26 @@
 .SH NAZWA
 eksportuj \- wypisz na standardowe wyjście tekstową reprezentację zapisu wyprodukowanego przez nagrywaj.
 .SH STRESZCZENIE
-nagrywaj [-p -n -E -S -r] [plik wyjsciowy]
+eksportuj  [-c -h -e/-z -0] [plik wyjsciowy]
 .SH OPIS
-Program 'nagrywaj' z częstotliowścią około 20Hz zbiera dane z dwóc IMU podpiętych po I2C, oraz odczytuje, który z czerwnoych przycisków został ostatnio naciśnięty. Każdy z takich odczytów (struktura Odczyt w rejestrator.cpp), zostaje zapisany verbatim (binarnie) do pamieci trwałej. Program eksportuj słuzy do wypisywania takiego zapisu w postaci tekstowej. Nagrywaj korzysta także z ekranu, gdzie wypisuje: w pierwszej linii ostatnią etykietę (zdefiniowane w guziczki.hpp), w drugiej linii: minuty : sekundy aktualnej sesji zapisu / przybliżoną długość całego zapisu w minutach.
+Program ten przetwarza binarny zapis z nagrywaj i produkuje jego reprezentacje tekstową (w csv). Zapisuje przy tym w pliku o tej samej nazwie, z dodanym przyrostkiem _pozycja, pozycje do której doszedł, więc jeżeli mu sie przerwie w trakcie, powinien zacząć od tego samego punktu, puszczony ponownie.
 .SH OPCJE
 .TP
-.BR \-n \fR
-Nie zapisuj do pliku.
+.BR \-c \fR
+Gdy dojdzie do konca pliku, czeka az pojawia sie kolejne dane
 .TP
-.BR \-p \fR
-Wypisuj na standardowe wyjście to, co zostało odczytane.
+.BR \-h \fR
+Format czytelniejszy dla ludzi, inaczej csv
 .TP
-.BR \-E \fR
-Nie używaj ekranu (ssd1306 po I2C).
+.BR \-e \fR
+Nie zapisuje pozycji do ktorej doszedl w pliku _pozycja i od razu zaczyna od konca pliku (uzyc z -c)
 .TP
-.BR \-S \fR
-Nie kończ działania, gdy pojawi się zbocze rosnące na pinie 12.
-.TP
-.BR \-r \fR
-Próbuj regulować automatycznie częstotliwość (Ale na razie niezbyt to działa).
+.BR \-z \fR
+Zaczyna na poczatku pliku i wyklucza sie z -e
+
 
 .SH ZOBACZ TEŻ
-nagrywaj(1), smkasuj(1), smaczdemon(1)
+nagrywaj(1), kasuj(1), smaczdemon(1)
 .SH BUGI
 Jeszcze nas zjedzą.
 .SH AUTOR

@@ -65,7 +65,10 @@ void wypisz_odczyt(FILE *fp, Odczyt * odczyt, int csv)
         fprintf(fp, "%s + %ldus, e:%d,i:%d,", repr, odczyt->czas.tv_usec, odczyt->etykieta, odczyt->impulsy);
     }
     else{
-        fprintf(fp,"%ld.%ld,%d,%d,",odczyt->czas.tv_sec,odczyt->czas.tv_usec, odczyt->etykieta, odczyt->impulsy);
+        struct tm * timeinfo = localtime(&(odczyt->czas.tv_sec));
+        char * repr = asctime(timeinfo);
+        repr[strlen(repr)-1]='\0';//nie chcemy \n
+        fprintf(fp,"%s,%ld,%d,%d,",repr,odczyt->czas.tv_usec, odczyt->etykieta, odczyt->impulsy);
     }
     fprintf(fp,"%d,",odczyt->etykieta);
     wypisz(fp,&(odczyt->prim),csv);
