@@ -1,0 +1,1 @@
+cat /usr/share/man/man1/osascript.1 | groff -mandoc -Thtml >man_osascript.html

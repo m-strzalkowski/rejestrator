@@ -1,0 +1,20 @@
+.\" Strona podręcznika dla smaczdemona.
+.\" Jak nie działa, to pisać na Discordzie, albo dzwonić.
+.TH nagrywaj 1 "29 Marca 2023" "1.0" "System Monitorowania Aktywności Człowieka"
+.SH NAZWA
+smaczdemon \- Program zawiadujący całym SMACZ - Systemem Monitorowania Aktywności CZłowieka [za pomocą IMU i enkodera].
+.SH STRESZCZENIE
+nagrywaj [ -d ] 
+.SH OPIS
+Ten program został wpisany do /etc/systemd/system/smaczdemon.service tak, żeby uruchamiany był po starcie systemu. Słucha wejść GPIO i jeśli złapie zbocze opadające na pinie 12 (Piąty od dołu ze strony bliższej brzegowi), oraz jeśli program nie istnieje już instancja, uruchamia program nagrywaj i przestaje pisać zegarak na ekranik.
+.SH OPCJE
+.TP
+.BR \-d \fR
+.B URUCHOM\0JAKO\0DEMONA \fR Inaczej normalnie będzie pisał na terminal, zdechnie po wylogowaniu itd.
+
+.SH ZOBACZ TEŻ
+eksportuj(1), smkasuj(1), smaczdemon(1)
+.SH BUGI
+Jeszcze nas zjedzą.
+.SH AUTOR
+Mateusz Strzałkowski (strzamat@gmail.com)

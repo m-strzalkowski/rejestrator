@@ -1,0 +1,32 @@
+.\" Strona podręcznika dla programu eksportuj.
+.\" Jak nie działa, to pisać na Discordzie, albo dzwonić.
+.TH nagrywaj 1 "29 Marca 2023" "1.0" "System Monitorowania Aktywności Człowieka"
+.SH NAZWA
+eksportuj \- wypisz na standardowe wyjście tekstową reprezentację zapisu wyprodukowanego przez nagrywaj.
+.SH STRESZCZENIE
+nagrywaj [-p -n -E -S -r] [plik wyjsciowy]
+.SH OPIS
+Program 'nagrywaj' z częstotliowścią około 20Hz zbiera dane z dwóc IMU podpiętych po I2C, oraz odczytuje, który z czerwnoych przycisków został ostatnio naciśnięty. Każdy z takich odczytów (struktura Odczyt w rejestrator.cpp), zostaje zapisany verbatim (binarnie) do pamieci trwałej. Program eksportuj słuzy do wypisywania takiego zapisu w postaci tekstowej. Nagrywaj korzysta także z ekranu, gdzie wypisuje: w pierwszej linii ostatnią etykietę (zdefiniowane w guziczki.hpp), w drugiej linii: minuty : sekundy aktualnej sesji zapisu / przybliżoną długość całego zapisu w minutach.
+.SH OPCJE
+.TP
+.BR \-n \fR
+Nie zapisuj do pliku.
+.TP
+.BR \-p \fR
+Wypisuj na standardowe wyjście to, co zostało odczytane.
+.TP
+.BR \-E \fR
+Nie używaj ekranu (ssd1306 po I2C).
+.TP
+.BR \-S \fR
+Nie kończ działania, gdy pojawi się zbocze rosnące na pinie 12.
+.TP
+.BR \-r \fR
+Próbuj regulować automatycznie częstotliwość (Ale na razie niezbyt to działa).
+
+.SH ZOBACZ TEŻ
+nagrywaj(1), smkasuj(1), smaczdemon(1)
+.SH BUGI
+Jeszcze nas zjedzą.
+.SH AUTOR
+Mateusz Strzałkowski (strzamat@gmail.com)
