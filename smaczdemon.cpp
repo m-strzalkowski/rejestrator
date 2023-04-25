@@ -1,9 +1,28 @@
 /*
- * daemonize.c
- * This example daemonizes a process, writes a few log messages,
- * sleeps 20 seconds and terminates afterwards.
- */
+ *** SMACZDEMON.cpp ***
+Program, który ma dzialac jako demon i sluchac przelacznika, wlaczajac nagrywanie. Poza tym wypisuje zegarek i wylacza system za drugim przelacznikiem
+vide: man smaczdemon
+*/
 
+/* /etc/systemd/system/smaczdemon.service:
+[Unit]
+Description=Smacz Monitoring System Daemon
+Documentation=man:smaczdemon(1)
+
+[Service]
+Type=simple
+ExecStart=/home/ms/smacz/rejestrator/smaczdemon
+StandardOutput=null
+Restart=on-failure
+#TasksMax=8
+# Increase the default a bit in order to allow many simultaneous
+# files to be monitored, we might need a lot of fds.
+#LimitNOFILE=16384
+
+[Install]
+WantedBy=multi-user.target
+Alias=smaczdemon.service
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -15,7 +34,8 @@
 #include "ekran.hpp"
 #include "guziczki.hpp"
 
-int (*printwsk)(const char *,...) = printf;//nie dziala w C++
+//brzydka magia, nie czytac.
+int (*printwsk)(const char *,...) = printf;
 int nic(const char *,...){return 0;}
 void (*syslogproxy)(int, const char *,...) = syslog;
 void nic2(int,const char *,...){return;}
@@ -29,6 +49,7 @@ void syslog_dummy(int s, const char * format, ...) {
 #define printf printwsk
 #define syslog syslogproxy
 
+//wylaczanie z gracja oraz obsluga sygnalow
 int pid_nagrywaj=-1;
 bool nie_rysuj=false;
 void zakoncz()
@@ -48,7 +69,7 @@ void sig_handler(int sig) {
     }
 }
 
-
+//poprawna demonizacja, jak sie okazuje, niepotrzebna a wrecz zabroniona przy [Service]\n Type=simple (wtedy usluga umiera)
 static void skeleton_daemon()
 {
     pid_t pid;
@@ -101,6 +122,7 @@ static void skeleton_daemon()
     /* Open the log file */
     openlog ("smaczdemon", LOG_PID, LOG_DAEMON);
 }
+
 //zwracane
 //-1 - blad
 //0 - nie znaleziono
@@ -121,8 +143,9 @@ int pid_procesu_o_nazwie(const char * nazwa)
     pclose(wy_pidof);
     printf("%dBUF:'%s'\n",i,buf);
     wczytano = sscanf(buf, "%d", &pid);
-    return pid;
+    return wczytano ? pid:-1;
 }
+
 void wylacz_komputer(void)
 {
     if(pid_nagrywaj>0 && (getpgid(pid_nagrywaj) > 0))//jaka grupe ma proces o tym pid -> czy zyje
@@ -130,12 +153,13 @@ void wylacz_komputer(void)
         syslog(LOG_NOTICE, "Not shutted down system bacause nagrywaj is running, with pid %d %d",pid_nagrywaj, getpgid(pid_nagrywaj));
     }
     else{
-        ekran_nagrywanie((char *)"SYSTEMU", (char *)"WYLACZANIE");
         nie_rysuj = true;
+        ekran_nagrywanie((char *)"SYSTEMU", (char *)"WYLACZANIE");
         int status = system("shutdown now");
         syslog(LOG_NOTICE, "Issued a shutdown now:%d", status);
     }
 }
+//callbaki do przelacznikow
 void gdy_duzy_niski(void)
 {
     printf("\nDUZY PRZELACZNIK W STANIE NISKIM\n\n");
@@ -174,9 +198,10 @@ void gdy_maly_wysoki(void)
 }
 
 int main(int argc, char *argv[]) {
+    //opcje
     int opt;
     bool demonizacja=false;
-    if(chdir("/home/ms/smacz/rejestrator")!=0){perror("chdir nieudane"); exit(1);};
+    if(chdir("/home/ms/smacz/rejestrator")!=0){syslog(LOG_PERROR,"chdir nieudane"); exit(1);};
     signal(SIGINT,sig_handler);
     syslog(LOG_NOTICE, "Smaczdaemon start.");
     //signal(SIGTERM,sig_handler);
@@ -195,21 +220,24 @@ int main(int argc, char *argv[]) {
         skeleton_daemon();
         printf = nic;
     }//else{syslog = syslog_dummy;}
-    syslog(LOG_NOTICE, "Smaczdaemon demonized.");
+
+    syslog(LOG_NOTICE, "Smaczdaemon daemonized.");
+    //USTAWIANIE KONFIGURACJI SPRZETOWEJ
+    /*
+    !! - UWAGA - ZMIENIA CHARAKTERYSTYKE FIZYCZNYCH OBWODOW, WLACZAJAC REZYSTORY PULL-UP NA NIEKTORYCH PINACH - !!
+    */
     ustawWiringPi();
     ustawPinDuzegoPrzelacznika(gdy_duzy_niski, gdy_duzy_wysoki);
     ustawPinMalegoPrzelacznika(gdy_maly_niski, gdy_maly_wysoki);
     ustawPinyDuzych();
     syslog(LOG_NOTICE, "Smaczdaemon started.");
 
-    char buf[2048] = {0};
     int wczytano=0;
     int i=0;
     int poprzedni_pid_nagrywaj=-2;
     while (1)
     {
         i++;
-        //TODO: Insert daemon code here.
         sleep(1);
         /*FILE * wy_pidof = NULL;
         //wy_pidof = popen("pidof nagrywaj", "r");

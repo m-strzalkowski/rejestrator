@@ -1,3 +1,8 @@
+/*
+ *** EKSPORTUJ.cpp ***
+Wypisuje plik z binarnym zapisem, w formacie tekstowym (tez csv)
+Zachowuje (lub nie, gdy to wylaczy sie opcja) pozycje do ktorej doszedl w pliku zapis_pozycja
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -13,6 +18,7 @@
 FILE * plik_nagrania = NULL;
 FILE * plik_stanu = NULL;
 int przeczytano = 0;
+//grzeczne zamykanie
 int zakoncz()
 {
     if(plik_nagrania){fclose(plik_nagrania);}
@@ -25,6 +31,7 @@ int zakoncz()
     }
     return EXIT_SUCCESS;
 }
+//obsluga sygnalow
 void sig_handler(int sig) {
     switch (sig) {
     case SIGINT:
@@ -38,29 +45,34 @@ void sig_handler(int sig) {
         abort();
     }
 }
-#define PRZYROSTEK_STANU "_pozycja"
+
+#define PRZYROSTEK_STANU "_pozycja"// plik z bedzie sie nazywal np. zapis_pozycja
 int czestotliwosc = 20;//Hz
 int main(int argc, char *argv[]) {
+    //opcje: - vide: man eksportuj
     bool dalej=false;
     bool csv=true;
     bool zacznij_na_koncu = false;
     bool zacznij_na_poczatku = false;
-    bool tylko_wyzeruj = false;
-    fprintf(stdout,"t_sec,label, pax,pay,paz,pzx,pzy,pzz,pmx,pmy,pmz, bax,bay,baz,bzx,bzy,bzz,bmx,bmy,bmz\n");
+//  bool tylko_wyzeruj = false;
+    bool nie_buforuj=false;//flush po kazdej linii
+    wypisz_naglowek(stdout);//naglowek csv
     char * sciezka_zapisu = (char *)"dane/zapis";
     char * sciezka_stanu_eksportu_zapisu = (char *)"dane/zapis_pozycja";
     Odczyt odczyt;
-
+    
+    //przetwarzanie opcji
     int opt;
-    while ((opt = getopt(argc, argv, "chez0")) != -1) {
+    while ((opt = getopt(argc, argv, "chezl")) != -1) {
         switch (opt) {
         case 'c': dalej = true; break;
         case 'h': csv = false; break;
         case 'e': zacznij_na_koncu = true; break;
         case 'z': zacznij_na_poczatku = true; break;
-        case '0': tylko_wyzeruj = true; break;
+//        case '0': tylko_wyzeruj = true; break;
+        case 'l': nie_buforuj = true; break;
         default:
-            fprintf(stderr, "Uzycie: %s [-c -h -e/-z] [plik wejsciowy]\n -c - Gdy dojdzie do konca pliku, czeka az pojawia sie kolejne dane\n -h format czytelniejszy dla ludzi, inaczej csv\n e - nie zapisuje pozycji do ktorej doszedl w pliku _pozycja i od razu zaczyna od konca pliku (uzyc z -c).\n -z zaczyna na poczatku pliku i wyklucza sie z -e", argv[0]);
+            fprintf(stderr, "Uzycie: %s [-c -h -e/-z] [plik wejsciowy]\n -c - Gdy dojdzie do konca pliku, czeka az pojawia sie kolejne dane\n -h format czytelniejszy dla ludzi, inaczej csv\n e - nie zapisuje pozycji do ktorej doszedl w pliku _pozycja i od razu zaczyna od konca pliku (uzyc z -c).\n -z zaczyna na poczatku pliku i wyklucza sie z -e\n -l robi flush po kazdej linii", argv[0]);
             exit(EXIT_FAILURE);
         }
     }
@@ -81,6 +93,8 @@ int main(int argc, char *argv[]) {
     sciezka_stanu_eksportu_zapisu = nowa_sc_stanu;
     strcat(sciezka_stanu_eksportu_zapisu, PRZYROSTEK_STANU);
     fprintf(stderr, "zapis: %s stan:%s\n", sciezka_zapisu, sciezka_stanu_eksportu_zapisu);
+
+    //otwarcie pliku
     plik_nagrania = fopen(sciezka_zapisu, "rb");
     if(!plik_nagrania) {plik_nagrania = fopen(sciezka_zapisu, "a+");}
     if(!plik_nagrania)
@@ -94,6 +108,7 @@ int main(int argc, char *argv[]) {
                 
     //}
 
+    //wedrowka w pliku na wlasciwa pozycje
     if(!zacznij_na_koncu)
     {
         plik_stanu = fopen(sciezka_stanu_eksportu_zapisu, "a+");
@@ -125,12 +140,13 @@ int main(int argc, char *argv[]) {
         przeczytano = ftell(plik_nagrania);
     }
 
+    //przechwytywanie sygnalow
     signal(SIGTERM,sig_handler);
     signal(SIGINT,sig_handler);//zalozenie pulapki na ctrl+c 
 
+    //glowna petla
     int status, status_wiersza;//ile przeczytano pojedynczym read i ile z danego wiersza(o dugoci struktury Odczyt).
-    for (;;) {
-        
+    for (;;) {   
 	//chcemy przeczytac dokladnie sizeof(odczyt) bajtow, nie wiecej, nie mniej
         status_wiersza=0;
 	    do{
@@ -189,6 +205,7 @@ int main(int argc, char *argv[]) {
                 exit(zakoncz());
 	}*/
         wypisz_odczyt(stdout,&odczyt,csv);
+        if(nie_buforuj){fflush(stdout);}
 
     }
 

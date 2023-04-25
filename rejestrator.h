@@ -26,3 +26,4 @@ struct Odczyt {
 void wypelnij_odczyt(Odczyt * odczyt, LSM9DS1 * imu1, LSM9DS1 * imu2, int etykieta, int impulsy);
 //void wypisz(FILE * fp, OdczytIMU *d, int csv);
 void wypisz_odczyt(FILE *fp, Odczyt * odczyt, int csv);
+void wypisz_naglowek(FILE * wy);

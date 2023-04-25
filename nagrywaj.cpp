@@ -1,3 +1,10 @@
+/*
+ *** NAGRYWAJ.cpp ***
+ Inicjalizacja, kalibracja oraz cykliczne odczyty z IMU, guzikow, wypisywanie statusu na ekraniku;
+ oraz zapis tego, co odczytal w postaci binarnej do pliku ./dane/zapis.
+ Domyslnie ma chodzic uruchamiany przez smaczdemona po przestawieniu przelacznika.
+ (vide: man nagrywaj)
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -19,33 +26,36 @@
 #define MAKS_ROZMIAR_ZAPISU 536870912 //512 MB
 #define	COUNT_KEY	0
 
-int zapis = 0;
-long int wielkosc_zapisu=-1;
+int deskryptor_zapisu = 0;//pliku, do ktorego trafiaja pomiary
+long int wielkosc_zapisu=-1;//wielkosc tego pliku
 
-long int t0=-1;
+long int t0=-1;//czas poczatkowy
 long int tmax=-1;
+
 int czestotliwosc = 20;//Hz //docelowa czestotliowsc
-const float histereza = 0.5;
+const float histereza = 0.5;//do ewentualnego ustalania czestotliowsci
 int czest_do_spania = 30;//spi przez 1s/czest_do_spania
 float rzeczyw_czest, wazona_czest; 
+//przelaczniki:
 bool wypisuj = false;
 bool zapisuj = true;
 bool ekran = true;
 bool regulacja_czestotliowsci=false;
 bool wylaczaj_fizycznym_przelacznikiem=true;
-//konczy proces
+
+//konczy proces zamykajac plik
 void zakoncz()
 {
     int s;
     ekran_godzina();
     fflush(stdout);
     fprintf(stderr, "Otrzymano SIGINT/SIGTERM po %lds = %fmin...\n", tmax-t0, 1.0*(tmax-t0)/60);
-    s=close(zapis);
+    s=close(deskryptor_zapisu);
     fprintf(stderr, "zamknieto plik: %d\n",s);
     fflush(stderr);
     exit(EXIT_SUCCESS);
 }
-
+//obsluga sygnalow
 void sig_handler(int sig) {
     switch (sig) {
     case SIGINT:
@@ -55,6 +65,7 @@ void sig_handler(int sig) {
         abort();
     }
 }
+//wypisywanie rzeczy na ekraniku - (etykieta \n czas aktualnej sesji/przyblizona dlugosc calego zapisu w minutach)
 void odswiez_ekran()
 {
     char buf[2048];
@@ -67,7 +78,7 @@ void odswiez_ekran()
     else{sprintf(buf,"%02d:%02d/%.0f", min,sek, ((float)(wielkosc_zapisu/sizeof(Odczyt)))/czestotliwosc/60 );}
     ekran_nagrywanie((char *)symbolOstatniegoDuzego(), buf);
 }
-PI_THREAD (obsluga_ekranu)//ekran jest powolny...
+PI_THREAD (obsluga_ekranu)//ekran jest powolny... (wiec osobny watek)
 {
     while(1)
     {
@@ -76,7 +87,7 @@ PI_THREAD (obsluga_ekranu)//ekran jest powolny...
     }
 }
 
-
+//callbacki do przyciskow - ignorowanie oprocz przelaczenia z powrotem 'malego' - wtedy sie wylacza
 void gdy_duzy_niski(void)
 {
     printf("\nDUZY PRZELACZNIK W STANIE NISKIM\n\n");
@@ -96,11 +107,11 @@ void gdy_maly_wysoki(void)
     if(wylaczaj_fizycznym_przelacznikiem)zakoncz();
 }
 
+//main
 int main(int argc, char *argv[]) {
-    //FILE * wy = stdout;
     char * sciezka_zapisu = (char *)"dane/zapis";
     int opt;
-
+    //opcje, opisane tez w podreczniku - man nagrywaj
     while ((opt = getopt(argc, argv, "pnESr")) != -1) {
         switch (opt) {
         case 'p': wypisuj = true; fprintf(stderr,"--wypisuj-odczyty ");break;
@@ -118,16 +129,18 @@ int main(int argc, char *argv[]) {
         sciezka_zapisu = argv[optind];
     }
     fprintf(stderr, "Zapisuj:%d Wypisuj:%d\n", zapisuj,wypisuj);
+    //zalozenie procedury obslugujacej sygnaly
     signal(SIGINT,sig_handler);
     signal(SIGTERM,sig_handler);
 
-    zapis = open(sciezka_zapisu,  O_CREAT | O_APPEND | O_RDWR, 0666);
-    if(zapis < 0)
+    //otwarcie pliku z zapisem pomiarow
+    deskryptor_zapisu = open(sciezka_zapisu,  O_CREAT | O_APPEND | O_RDWR, 0666);
+    if(deskryptor_zapisu < 0)
     {
-        fprintf(stderr, "ERROR OPENING FILE:%d %s", zapis, sciezka_zapisu);
+        fprintf(stderr, "ERROR OPENING FILE:%d %s", deskryptor_zapisu, sciezka_zapisu);
         exit(EXIT_FAILURE);
     }
-    printf("zapis:%d",zapis);
+    printf("deskryptor_zapisu:%d",deskryptor_zapisu);
 
     //Wielkosc pliku
     struct stat zapisu_stat;
@@ -147,7 +160,7 @@ int main(int argc, char *argv[]) {
 
     LSM9DS1 * imu = NULL;
     LSM9DS1 * imu_tab[] = {&imu1, &imu2};
-    //imu = imu_tab[1]; int i=0;
+    
     for(int i=0; i<imu_num && (imu = imu_tab[i]) ; i++)//dla obu imu
     {
         printf("\nbegin");
@@ -160,11 +173,12 @@ int main(int argc, char *argv[]) {
 
         imu->calibrate();
     }
+    
     wypelnij_odczyt(&odczyt, &imu1, &imu2, ostatni_duzy(), 0);
 
-//PO PIERWSZYM ODCZYCIE
-        //** INICJALIZACJA GUZICZKOW **//
-    //ustawWiringPi();
+    //PO PIERWSZYM ODCZYCIE (w innej kolejnosci nie dziala, bo bilioteka do imu chyba psuje callbacki)
+    //** INICJALIZACJA GUZICZKOW **//
+    //ustawWiringPi(); - niepotrzebne przez LSM9DS1
     ustawPinDuzegoPrzelacznika(gdy_duzy_niski, gdy_duzy_wysoki);
     ustawPinMalegoPrzelacznika(gdy_maly_niski, gdy_maly_wysoki);
     ustawPinyDuzych();
@@ -173,14 +187,17 @@ int main(int argc, char *argv[]) {
     //** OSOBNY WATEK ODSWIEAZJACY EKRAN **//
     int st = piThreadCreate(obsluga_ekranu) ;
     if (st != 0)printf("Nie udalo sie uruchomic watku");
-
+    
+    //czas rozpoczecia
     t0 = odczyt.czas.tv_sec;
 
+    //glowna petla
     int status,zapisane;
     int wiersze=0;
     long int ms1,ms2,dms;
     for (;;wiersze++) {
 
+        //pomiar za pomoca imu
         for(int i=0; i<imu_num && (imu = imu_tab[i]) ; i++)//dla obu imu
         {
             while (!imu->gyroAvailable()) ;
@@ -193,7 +210,8 @@ int main(int argc, char *argv[]) {
         ms1 = odczyt.czas.tv_usec;
         wypelnij_odczyt(&odczyt, &imu1, &imu2, ostatni_duzy(), 0);
         ms2 = odczyt.czas.tv_usec;
-        //dms = (ms2>ms1)? (ms2-ms1) : (ms2+1000000-ms1);
+
+        //prymitywna regulacja czestotliwosci odswiezania
         if(ms2<ms1)ms2+=1000000;
         dms = ms2-ms1;
         if(dms>0 && regulacja_czestotliowsci)
@@ -209,21 +227,25 @@ int main(int argc, char *argv[]) {
             
         }
 
+        //aktualny czas (piLock, bo drugi watek piszacy po ekranie tez go uzywa)
         piLock(COUNT_KEY);
         tmax = odczyt.czas.tv_sec;
         piUnlock(COUNT_KEY);
+
         if(zapisuj)
         {
+            //nie chcemy pozwolic, zeby cala karta pamieci zostala zjedzona przez nagrywajke.
             if(wielkosc_zapisu > MAKS_ROZMIAR_ZAPISU )
             {
                 fprintf(stderr, " %ld/%d Przekroczono maksymalny rozmiar zapisu. Konczenie.\n", wielkosc_zapisu, MAKS_ROZMIAR_ZAPISU);
-                close(zapis);
+                close(deskryptor_zapisu);
                 exit(2);
             }
+            //sam zapis, z uzyciem write i upewnieniem sie, ze wszystkie bajty poszly.
             zapisane=0;
             do{
-                status = write(zapis,&odczyt, sizeof(odczyt));
-                //status = write(zapis,"The epoll API performs a similar task to poll(2): monitorin gmultiple file descriptors to see if I/O is possible on any ofthem.  The epoll API can be used either as an edge-triggered or alevel-triggered interface and scales well to large numbers of watched file descriptors.", sizeof(odczyt));
+                status = write(deskryptor_zapisu,&odczyt, sizeof(odczyt));
+                //status = write(deskryptor_zapisu,"The epoll API performs a similar task to poll(2): monitorin gmultiple file descriptors to see if I/O is possible on any ofthem.  The epoll API can be used either as an edge-triggered or alevel-triggered interface and scales well to large numbers of watched file descriptors.", sizeof(odczyt));
                 if(status < (int)(sizeof(odczyt)))
                 {
                     fprintf(stderr, "write error: %d:", status);
@@ -242,17 +264,13 @@ int main(int argc, char *argv[]) {
             wielkosc_zapisu += sizeof(odczyt);
         }
         //printf("%d@\n",wiersze);
+        
         if(wypisuj){wypisz_odczyt(stdout,&odczyt,0);}
         else{printf("\r %d wierszy, %d B %ld B", wiersze, wiersze *sizeof(odczyt), wielkosc_zapisu);}
         
-        
-        /*printf("\nAccel: %f, %f, %f [Gs] ", imu.calcAccel(imu.ax), imu.calcAccel(imu.ay), imu.calcAccel(imu.az));
-        printf("Gyro: %f, %f, %f [deg/s] ", imu.calcGyro(imu.gx), imu.calcGyro(imu.gy), imu.calcGyro(imu.gz));
-        printf("Mag: %f, %f, %f [gauss]", imu.calcMag(imu.mx), imu.calcMag(imu.my), imu.calcMag(imu.mz));
-        printf("\n\n");*/
         usleep(1000000/czest_do_spania);
     }
-    close(zapis);
+    close(deskryptor_zapisu);
     exit(EXIT_SUCCESS);
 }
 
