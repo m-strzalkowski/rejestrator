@@ -1,0 +1,5 @@
+#!/bin/sh
+set -e
+i2cget -y 1 0x1c
+i2cget -y 1 0x6a
+echo "IMU 2 (zadrapane) SPRAWNE"

@@ -196,17 +196,34 @@ int main(int argc, char *argv[]) {
     int wiersze=0;
     long int ms1,ms2,dms;
     for (;;wiersze++) {
-
-        //pomiar za pomoca imu
-        for(int i=0; i<imu_num && (imu = imu_tab[i]) ; i++)//dla obu imu
-        {
-            while (!imu->gyroAvailable()) ;
-            imu->readGyro();
-            while(!imu->accelAvailable()) ;
-            imu->readAccel();
-            while(!imu->magAvailable()) ;
-            imu->readMag();
+        try{
+            //pomiar za pomoca imu
+            for(int i=0; i<imu_num && (imu = imu_tab[i]) ; i++)//dla obu imu
+            {
+                while (!imu->gyroAvailable()) ;
+                imu->readGyro();
+                while(!imu->accelAvailable()) ;
+                imu->readAccel();
+                while(!imu->magAvailable()) ;
+                imu->readMag();
+            }
         }
+        catch (int kodWyjatku)
+        {
+//LSM9DS1.cpp:1106 if ((read(_fd, temp_dest, 6)) < 0) {
+//LSM9DS1.cpp:1107        //fprintf(stderr, "Error: read value\n");
+//LSM9DS1.cpp:1108        throw 999;
+            if(kodWyjatku == 999)
+            {
+                fprintf(stderr, "\nBLAD ODCZYTU Z KTOREGOS IMU!");
+            }
+            else{
+                fprintf(stderr, "\nNie spodziewalem sie wyjatku typu 'int' o wartosci %d, podczas odczytu z IMU.", kodWyjatku);
+            }
+            fsync(deskryptor_zapisu);//jak fflush?
+            zakoncz();
+        }
+        
         ms1 = odczyt.czas.tv_usec;
         wypelnij_odczyt(&odczyt, &imu1, &imu2, ostatni_duzy(), 0);
         ms2 = odczyt.czas.tv_usec;

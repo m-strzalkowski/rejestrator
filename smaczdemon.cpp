@@ -33,7 +33,7 @@ Alias=smaczdemon.service
 #include <stdarg.h>
 #include "ekran.hpp"
 #include "guziczki.hpp"
-
+#include "piny_guzikow.hpp"
 //brzydka magia, nie czytac.
 int (*printwsk)(const char *,...) = printf;
 int nic(const char *,...){return 0;}
@@ -196,7 +196,7 @@ void gdy_maly_wysoki(void)
 {
     printf("\nMALY PRZELACZNIK W STANIE WYSOKIM\n\n");
 }
-
+void zmien_rozmiar_tekstu(void){static int i=1; i+=1; if(i>4){i=1;} rozmiar_tekstu(i);}
 int main(int argc, char *argv[]) {
     //opcje
     int opt;
@@ -230,11 +230,15 @@ int main(int argc, char *argv[]) {
     ustawPinDuzegoPrzelacznika(gdy_duzy_niski, gdy_duzy_wysoki);
     ustawPinMalegoPrzelacznika(gdy_maly_niski, gdy_maly_wysoki);
     ustawPinyDuzych();
+    //ustawPinOdDuzego(PIN_DUZEGO_A, &odwroc_ekran);
+    //ustawPinOdDuzego(PIN_DUZEGO_B, &zmien_rozmiar_tekstu);
+    //ustawPinOdDuzego(PIN_DUZEGO_D, &przekrec_ekran);
     syslog(LOG_NOTICE, "Smaczdaemon started.");
 
     int wczytano=0;
     int i=0;
     int poprzedni_pid_nagrywaj=-2;
+    char buf[256];
     while (1)
     {
         i++;
@@ -256,7 +260,19 @@ int main(int argc, char *argv[]) {
         }
         else{
             if(poprzedni_pid_nagrywaj != pid_nagrywaj)syslog(LOG_NOTICE, "Not found 'nagrywaj'.");
-            if(!nie_rysuj)ekran_godzina();
+            if(!nie_rysuj)
+            {
+                int kod1, kod2;
+                kod1 = system("/home/ms/smacz/rejestrator/testIMU1");
+                kod2 = system("/home/ms/smacz/rejestrator/testIMU2");
+                if(kod1 != 0 || kod2 != 0)
+                {
+                    //sprintf(buf, "IMU1/2:%d/%d ROZPIETE",kod1, kod2);
+                    sprintf(buf, "IMU%s%s%s:BLAD (ROZPIETE)", ((kod1)?("1"):("")),((kod1 && kod2)?(","):("")),((kod2)?("2"):("")));
+                    ekran_nagrywanie(buf,(char *)"");
+                }
+                else{ekran_godzina();}
+            }
         }
         poprzedni_pid_nagrywaj = pid_nagrywaj;
     }

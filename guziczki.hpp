@@ -15,6 +15,6 @@ int ostatni_duzy(void);
     public:
     void ustawPin(int pin,void(*gdy_niski)(void), void(*gdy_wysoki)(void));
 };*/
-
+void ustawPinOdDuzego(int pin, void (*isr)());
 void ustawPinDuzegoPrzelacznika(void(*gdy_niski)(void), void(*gdy_wysoki)(void));
 void ustawPinMalegoPrzelacznika(void(*gdy_niski)(void), void(*gdy_wysoki)(void));

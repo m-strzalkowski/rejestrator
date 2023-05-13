@@ -42,3 +42,11 @@ void ekran_nagrywanie(char * etykieta, char * napis)
     ssd1306_drawString(buf);
     ssd1306_display();
 }
+void odwroc_ekran(void)
+{
+    static int i=0;
+    ssd1306_invertDisplay(i=!i);
+    return;
+}
+void przekrec_ekran(void){rotate_screen();}
+void rozmiar_tekstu(int s){ssd1306_setTextSize(s);}

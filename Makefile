@@ -1,4 +1,5 @@
 CC = gcc
+CPP = g++
 CFLAGS = -O2 -g -Wall
 .PHONY: all
 all: ssd1306_i2c.o rejestrator.o guziczki.o ekran.o smaczdemon nagrywaj eksportuj test_guziczkow test_ekranu
@@ -8,7 +9,7 @@ ssd1306_i2c.o: ssd1306_i2c.c
 #	ar cr ssd1306_i2c.a ssd1306_i2c.o
 #Funkcje do odczytu z IMU
 rejestrator.o: rejestrator.cpp
-	$(CC) -Wall -O2 -c rejestrator.cpp -o rejestrator.o -llsm9ds1
+	$(CPP) -Wall -O2 -c rejestrator.cpp -o rejestrator.o -llsm9ds1
 
 #Funkcje do ustawiania obwodow i czytania odpowiednich GPIO
 guziczki.o: guziczki.cpp
@@ -16,7 +17,7 @@ guziczki.o: guziczki.cpp
 
 #Funcje do obslugi ekranu
 ekran.o: ekran.cpp
-#	$(CC) -Wall -O2 -c ekran.cpp ssd1306_i2c.c -lwiringPi
+	$(CC) -Wall -O2 -c ekran.cpp ssd1306_i2c.c -lwiringPi
 	$(CC) $(CFLAGS) -O2 -c ekran.cpp -lwiringPi
 
 
@@ -28,8 +29,8 @@ smaczdemon: smaczdemon.cpp ekran.o guziczki.o ssd1306_i2c.o
 #Wlasciwy program nagrywajacy pomiary
 nagrywaj: nagrywaj.cpp rejestrator.o guziczki.o ekran.o ssd1306_i2c.o
 #	$(CC) -Wall -O2 -g nagrywaj.cpp guziczki.o rejestrator.o ekran.cpp ssd1306_i2c.c -o nagrywaj -llsm9ds1 -lwiringPi
-	$(CC) $(CFLAGS) -c  nagrywaj.cpp -llsm9ds1 -lwiringPi
-	$(CC) $(CFLAGS) nagrywaj.o rejestrator.o guziczki.o ekran.o ssd1306_i2c.o -o nagrywaj -llsm9ds1 -lwiringPi
+	$(CPP) $(CFLAGS) -c  nagrywaj.cpp -llsm9ds1 -lwiringPi
+	$(CPP) $(CFLAGS) nagrywaj.o rejestrator.o guziczki.o ekran.o ssd1306_i2c.o -o nagrywaj -llsm9ds1 -lwiringPi
 
 #Eksporter pomiarow
 eksportuj: eksportuj.cpp rejestrator.o

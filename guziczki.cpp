@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <wiringPi.h>
+#include "piny_guzikow.hpp"
 /*
  * isr.c:
  *	Wait for Interrupt test program - ISR method
@@ -104,10 +105,6 @@ void ustawPinOdDuzego(int pin, void (*isr)())
 
 //DEFINICJA KONFIGURACJI CZERWONYCH GUZIKOW
 //!!! PINY W NUMERACJI OFICJALNEJ, NIE WIRINGPI !!!//
-#define PIN_DUZEGO_A 26//25
-#define PIN_DUZEGO_B 19//24
-#define PIN_DUZEGO_C 13//23
-#define PIN_DUZEGO_D 6//22
 void isrDuzegoA(void){isrDuzych(PIN_DUZEGO_A);}
 void isrDuzegoB(void){isrDuzych(PIN_DUZEGO_B);}
 void isrDuzegoC(void){isrDuzych(PIN_DUZEGO_C);}
@@ -115,8 +112,7 @@ void isrDuzegoD(void){isrDuzych(PIN_DUZEGO_D);}
 
 int kombinacjaResetuDuzych(){return 0;}
 
-#define PIN_DUZEGO_PRZELACZNIKA 5//21
-#define PIN_MALEGO_PRZELACZNIKA 12//26
+
 struct timeval ost_duzy_p;
 static void (*gdy_niski_na_duzym)(void) = NULL;
 static void (*gdy_wysoki_na_duzym)(void) = NULL;
@@ -185,6 +181,7 @@ void ustawPinMalegoPrzelacznika(void(*gdy_niski)(void), void(*gdy_wysoki)(void))
     return;
   }
 }
+
 /*KONIEC IDIOTYCZNEJ KOPII*/
 
 //FUNKCJA USTAWIAJACA CALY ZESTAW CZERWONYCH GUZIKOW
@@ -210,7 +207,6 @@ const char * symbolOstatniegoDuzego()
 
 void ustawWiringPi(void)
 {
-  //if (wiringPiSetup () < 0)
   if (wiringPiSetupGpio() < 0)
   {
     fprintf (stderr, "Unable to setup wiringPi: %s\n", strerror (errno)) ;

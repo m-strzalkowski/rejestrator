@@ -36,7 +36,7 @@ All text above, and the splash screen below must be included in any redistributi
 #define true 1
 #define false 0
 
-#define rotation 0
+//#define rotation 0
 
 #define pgm_read_byte(addr) (*(const unsigned char *)(addr))
 
@@ -181,10 +181,14 @@ int buffer[SSD1306_LCDWIDTH * SSD1306_LCDHEIGHT / 8] = {
 
 int _vccstate;
 int i2cd;
-
+int rotation=0;
 #define ssd1306_swap(a, b) { int t = a; a = b; b = t; }
 
-
+void rotate_screen(void)
+{
+	rotation+=1;
+	if(rotation>3){rotation=0;}
+}
 // the most basic function, set a single pixel
 void ssd1306_drawPixel(int x, int y, unsigned int color)
 {
@@ -722,7 +726,7 @@ void ssd1306_fillRect(int x, int y, int w, int h, int fillcolor)
 
 	switch (rotation) {
 	case 1:
-		swap_values(x, y);
+		ssd1306_swap(x, y);
 		x = WIDTH - x - 1;
 		break;
 	case 2:
@@ -730,7 +734,7 @@ void ssd1306_fillRect(int x, int y, int w, int h, int fillcolor)
 		y = HEIGHT - y - 1;
 		break;
 	case 3:
-		swap_values(x, y);
+		ssd1306_swap(x, y);
 		y = HEIGHT - y - 1;
 		break;
 	}
