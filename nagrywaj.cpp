@@ -17,6 +17,7 @@
 #include <signal.h>
 #include <sys/stat.h>
 #include <wiringPi.h>
+#include <syslog.h>
 #include "LSM9DS1_Types.h"
 #include "LSM9DS1.h"
 #include "rejestrator.h"
@@ -42,6 +43,7 @@ bool zapisuj = true;
 bool ekran = true;
 bool regulacja_czestotliowsci=false;
 bool wylaczaj_fizycznym_przelacznikiem=true;
+bool zapis_w_innym_miejscu=false;
 
 //konczy proces zamykajac plik
 void zakoncz()
@@ -53,7 +55,8 @@ void zakoncz()
     s=close(deskryptor_zapisu);
     fprintf(stderr, "zamknieto plik: %d\n",s);
     fflush(stderr);
-    exit(EXIT_SUCCESS);
+    int kod = system("pkill --signal SIGUSR1 smaczdemon");
+    exit(kod);
 }
 //obsluga sygnalow
 void sig_handler(int sig) {
@@ -68,15 +71,21 @@ void sig_handler(int sig) {
 //wypisywanie rzeczy na ekraniku - (etykieta \n czas aktualnej sesji/przyblizona dlugosc calego zapisu w minutach)
 void odswiez_ekran()
 {
-    char buf[2048];
+    char buf[2048]; volatile int niezainicjalizowany=0;
     piLock(COUNT_KEY);
     int min = (tmax-t0)/60;
     int sek = (tmax-t0)%60;
+    niezainicjalizowany = (tmax<0) || (t0<0);
     piUnlock(COUNT_KEY);
-    if(regulacja_czestotliowsci)
-    { sprintf(buf,"%02d:%02d@%2.1f", min,sek,rzeczyw_czest); }
-    else{sprintf(buf,"%02d:%02d/%.0f", min,sek, ((float)(wielkosc_zapisu/sizeof(Odczyt)))/czestotliwosc/60 );}
-    ekran_nagrywanie((char *)symbolOstatniegoDuzego(), buf);
+    if(niezainicjalizowany)
+    {ekran_nagrywanie((char *)"startowanie...", (char *)"");}
+    else{
+        if(regulacja_czestotliowsci)
+        { sprintf(buf,"%02d:%02d@%2.1f", min,sek,rzeczyw_czest); }
+        else{sprintf(buf,"%02d:%02d/%s%.0f", min,sek,(zapis_w_innym_miejscu?("!"):("")) ,((float)(wielkosc_zapisu/sizeof(Odczyt)))/czestotliwosc/60 );}
+        ekran_nagrywanie((char *)symbolOstatniegoDuzego(), buf);
+    }
+    return;
 }
 PI_THREAD (obsluga_ekranu)//ekran jest powolny... (wiec osobny watek)
 {
@@ -137,8 +146,28 @@ int main(int argc, char *argv[]) {
     deskryptor_zapisu = open(sciezka_zapisu,  O_CREAT | O_APPEND | O_RDWR, 0666);
     if(deskryptor_zapisu < 0)
     {
+        openlog ("nagrywaj", LOG_PID , LOG_LOCAL0);
+        syslog(LOG_INFO, "Unable to open recording file:%s",sciezka_zapisu);
+
         fprintf(stderr, "ERROR OPENING FILE:%d %s", deskryptor_zapisu, sciezka_zapisu);
-        exit(EXIT_FAILURE);
+        static struct timeval curr;
+        gettimeofday(&curr, NULL);
+        char tbuf[4096];
+        sprintf(tbuf,"dane/zapis_%ld",curr.tv_sec);
+        sciezka_zapisu = tbuf;
+        fprintf(stderr, "trying to open file: %s", sciezka_zapisu);
+        deskryptor_zapisu = open(sciezka_zapisu,  O_CREAT | O_APPEND | O_RDWR, 0666);
+        if(deskryptor_zapisu < 0)
+        {
+            fprintf(stderr, "ERROR OPENING FILE:%d %s", deskryptor_zapisu, sciezka_zapisu);
+            syslog(LOG_WARNING, "Stopping:Unable to open fallback recording file(%d):%s",deskryptor_zapisu,sciezka_zapisu);
+            closelog();
+            exit(EXIT_FAILURE);
+        }
+        zapis_w_innym_miejscu=true;
+        fprintf(stderr, "writing to: %s", sciezka_zapisu);
+        syslog(LOG_INFO, "writing to: %s", sciezka_zapisu);
+        closelog();
     }
     printf("deskryptor_zapisu:%d",deskryptor_zapisu);
 

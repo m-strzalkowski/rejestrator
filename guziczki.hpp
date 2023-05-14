@@ -3,6 +3,7 @@ void ustawWiringPi(void);
 void ustawPinyDuzych(void);
 const char * symbolOstatniegoDuzego();
 int ostatni_duzy(void);
+int czytaj_pin(int pin);
 //https://forums.raspberrypi.com/viewtopic.php?t=104814
 /*class Przelacznik
 {

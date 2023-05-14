@@ -45,18 +45,11 @@
 
 static volatile int globalCounter = 0 ;
 
-
-/*
- * myInterrupt:
- *********************************************************************************
- */
-void myInterrupt (void)
+int czytaj_pin(int pin)
 {
-  if(digitalRead(0) == HIGH)//rising
-  {printf("Rising\n");}
-  else{printf("Falling\n");}
-  ++globalCounter ;
+  return digitalRead(pin);
 }
+
 ///OBSLUGA ZDARZEN NA GUZIKACH///
 
 #define IGNORUJ_ZMIANY_SZYBSZE_NIZ 100000//mikrosekund - 10milisek

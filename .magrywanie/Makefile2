@@ -1,0 +1,13 @@
+CC = gcc
+CFLAGS = -Wall -O2
+LDFLAGS = -llsm9ds1
+OBJFILES = nagrywaj.o ../rejestrator/rejestrator.o rejestrator.h
+INCLUDE_DIR = ../include
+TARGET = nagrywaj
+
+all: $(TARGET)
+
+$(TARGET): $(OBJFILES)
+	$(CC) -xwdupa $(CFLAGS) -o $(TARGET) -I$(INCLUDE_DIR) $(OBJFILES) $(LDFLAGS) 
+clean:
+	rm -f $(OBJFILES) $(TARGET) *~
