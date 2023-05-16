@@ -322,7 +322,15 @@ int main(int argc, char *argv[]) {
 
         pid_nagrywaj = pid_innego_procesu_o_nazwie("nagrywaj");
         if(pid_nagrywaj>0){
-            if(poprzedni_pid_nagrywaj != pid_nagrywaj)syslog(LOG_NOTICE, "Found 'nagrywaj' %d with pid:%d", wczytano,pid_nagrywaj);
+            if(poprzedni_pid_nagrywaj != pid_nagrywaj)
+            {
+                syslog(LOG_NOTICE, "Found 'nagrywaj' %d with pid:%d", wczytano,pid_nagrywaj);
+                if(!nagrywaj_ma_byc_wlaczane)//wyłączanie
+                {
+                    int kod = system("pkill --signal SIGINT nagrywanie");
+                    syslog(LOG_NOTICE, "pkill --signal SIGINT nagrywanie:code %d",kod);
+                }
+            }
         }
         else{
             if(poprzedni_pid_nagrywaj != pid_nagrywaj)syslog(LOG_NOTICE, "Not found 'nagrywaj'.");

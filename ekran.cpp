@@ -26,7 +26,7 @@ void ekran_godzina(void)
     timeinfo = localtime(&czas);
     char * repr = asctime(timeinfo);
     repr[strlen(repr)-1]='\0';//nie chcemy \n
-    sprintf(buf, "%s,", repr);
+    sprintf(buf, " %s,", repr);
     ssd1306_clearDisplay();
     ssd1306_drawString(buf);
     ssd1306_display();
@@ -37,7 +37,7 @@ void ekran_nagrywanie(char * etykieta, char * napis)
     static int pierwszy = 1;
     char buf[2048] = {0};
     if(pierwszy){inicjuj(); pierwszy=0;}
-    sprintf(buf, "%s\n%s",etykieta, napis);
+    sprintf(buf, " %.*s\n %s",8,etykieta, napis);
     ssd1306_clearDisplay();
     ssd1306_drawString(buf);
     ssd1306_display();
