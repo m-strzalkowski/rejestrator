@@ -49,6 +49,7 @@ bool zapis_w_innym_miejscu=false;
 void zakoncz()
 {
     int s;
+    piLock(COUNT_KEY);//ze względu na zapis
     ekran_godzina();
     fflush(stdout);
     fprintf(stderr, "Otrzymano SIGINT/SIGTERM po %lds = %fmin...\n", tmax-t0, 1.0*(tmax-t0)/60);
@@ -57,6 +58,7 @@ void zakoncz()
     fflush(stderr);
     int kod = system("pkill --signal SIGUSR1 smaczdemon");
     exit(kod);
+    piUnlock(COUNT_KEY);
 }
 //obsluga sygnalow
 void sig_handler(int sig) {
@@ -288,6 +290,7 @@ int main(int argc, char *argv[]) {
                 exit(2);
             }
             //sam zapis, z uzyciem write i upewnieniem sie, ze wszystkie bajty poszly.
+            piLock(COUNT_KEY);
             zapisane=0;
             do{
                 status = write(deskryptor_zapisu,&odczyt, sizeof(odczyt));
@@ -308,6 +311,8 @@ int main(int argc, char *argv[]) {
                 //printf("%d/%d\n", zapisane,sizeof(odczyt));
             }while(zapisane<(int)(sizeof(odczyt)));
             wielkosc_zapisu += sizeof(odczyt);
+            piUnlock(COUNT_KEY);
+         //koniec zapisu
         }
         //printf("%d@\n",wiersze);
         
